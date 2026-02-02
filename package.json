@@ -1,0 +1,26 @@
+{
+  "name": "eliza-goplus-poc",
+  "version": "1.0.0",
+  "description": "ElizaOS bot with GoPlus token scanner integration",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "audit": "tsx src/scanner.ts"
+  },
+  "keywords": ["eliza", "goplus", "token-scanner", "web3"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ai16z/eliza": "latest",
+    "@ai16z/adapter-sqlite": "latest",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "typescript": "^5.3.3"
+  }
+}
