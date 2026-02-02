@@ -130,3 +130,33 @@ pnpm add node-fetch
 If GoPlus API fails:
 # Test the API directly
 curl "https://api.gopluslabs.io/api/v1/token_security/1?contract_addresses=0xdac17f958d2ee523a2206206994597c13d831ec7"
+## Example Output
+
+```bash
+$ pnpm scan 0xdac17f958d2ee523a2206206994597c13d831ec7
+
+🔍 Scanning token: 0xdac17f958d2ee523a2206206994597c13d831ec7 on chain 1...
+
+============================================================
+📊 TOKEN SECURITY REPORT
+============================================================
+Contract: 0xdac17f958d2ee523a2206206994597c13d831ec7
+
+🚨 CRITICAL RISK FACTORS:
+   Honeypot: 🟢 NO
+   Proxy Contract: 🟢 NO
+   Mintable: 🔴 YES (HIGH RISK)
+   ...
+### 4. Final Git commits
+
+```bash
+# Commit the working scanner
+git add .
+git commit -m "Working PoC: GoPlus API integration successful
+
+- Successfully fetches token security data
+- Formats risk analysis with color-coded indicators
+- Tested with USDT on Ethereum (12M+ holders verified)
+- Clean terminal output with comprehensive risk scoring"
+
+git push origin main
