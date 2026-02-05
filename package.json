@@ -10,7 +10,12 @@
     "start": "node dist/index.js",
     "scan": "tsx src/scanner.ts"
   },
-  "keywords": ["eliza", "goplus", "token-scanner", "web3"],
+  "keywords": [
+    "eliza",
+    "goplus",
+    "token-scanner",
+    "web3"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -22,5 +27,13 @@
   "devDependencies": {
     "@types/node": "^20.11.5",
     "typescript": "^5.3.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tenderacer-lgtm/eliza-goplus-poc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tenderacer-lgtm/eliza-goplus-poc/issues"
+  },
+  "homepage": "https://github.com/tenderacer-lgtm/eliza-goplus-poc#readme"
 }
