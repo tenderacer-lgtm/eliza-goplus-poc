@@ -5,3 +5,5 @@ dist/
 .DS_Store
 *.db
 *.sqlite
+.env
+*.env
