@@ -19,6 +19,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "openai": "^4.0.0",
     "@ai16z/eliza": "latest",
     "@ai16z/adapter-sqlite": "latest",
     "dotenv": "^16.4.5",
