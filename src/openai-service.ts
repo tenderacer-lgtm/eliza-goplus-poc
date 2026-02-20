@@ -28,8 +28,8 @@ class OpenAIService {
     });
     
     this.model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-    this.maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS || '150');
-    this.temperature = parseFloat(process.env.OPENAI_TEMPERATURE || '0.8');
+    this.maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS || '100');
+    this.temperature = parseFloat(process.env.OPENAI_TEMPERATURE || '0.9');
   }
 
   async generateResponse(contractData: ContractData): Promise<string> {
@@ -48,7 +48,15 @@ class OpenAIService {
       });
 
       const response = completion.choices[0]?.message?.content;
-      return response?.trim() || this.getFallbackResponse(contractData);
+
+// Clean response - remove non-English characters
+const cleaned = response
+  ?.replace(/[^\x00-\x7F\s]/g, '') // Remove non-ASCII
+  .replace(/\s+/g, ' ') // Fix spacing
+  .trim()
+  .substring(0, 150); // Hard limit
+
+return cleaned || this.getFallbackResponse(contractData);
 
     } catch (error) {
       console.error('OpenAI API error:', error);
