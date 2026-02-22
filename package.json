@@ -1,40 +1,24 @@
 {
-  "name": "eliza-goplus-poc",
-  "version": "1.0.0",
-  "description": "ElizaOS bot with GoPlus token scanner integration",
+  "name": "rugpullatypus-bot",
+  "version": "2.0.0",
+  "description": "RugPullatypus Token Scanner Bot V2",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/telegram-bot-v2.js",
   "scripts": {
-    "dev": "tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "scan": "tsx src/scanner.ts"
+    "start": "node dist/telegram-bot-v2.js"
   },
-  "keywords": [
-    "eliza",
-    "goplus",
-    "token-scanner",
-    "web3"
-  ],
+  "keywords": ["telegram", "bot", "token-scanner", "web3"],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "openai": "^4.0.0",
-    "@ai16z/eliza": "latest",
-    "@ai16z/adapter-sqlite": "latest",
-    "dotenv": "^16.4.5",
-    "tsx": "^4.7.0"
+    "dotenv": "^16.6.1",
+    "openai": "^4.104.0",
+    "telegraf": "^4.16.3",
+    "typescript": "^5.3.3",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.5",
-    "typescript": "^5.3.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tenderacer-lgtm/eliza-goplus-poc.git"
-  },
-  "bugs": {
-    "url": "https://github.com/tenderacer-lgtm/eliza-goplus-poc/issues"
-  },
-  "homepage": "https://github.com/tenderacer-lgtm/eliza-goplus-poc#readme"
+    "@types/node": "^20.11.5"
+  }
 }
