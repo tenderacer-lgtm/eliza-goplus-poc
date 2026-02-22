@@ -60,7 +60,7 @@ export class TokenScanner {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: GoPlusResponse = await response.json();
+      const data = await response.json() as GoPlusResponse;
 
       if (data.code !== 1) {
         throw new Error(`API error: ${data.message}`);
