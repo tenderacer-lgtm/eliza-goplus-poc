@@ -13,6 +13,27 @@ const __dirname = path.dirname(__filename);
 const characterPath = path.join(__dirname, '../RugPullatypus.json');
 const character = JSON.parse(fs.readFileSync(characterPath, 'utf-8'));
 
+// Add interface with optional properties
+interface TokenSecurityResult {
+  error?: any;
+  token_name?: string;
+  token_symbol?: string;
+  is_honeypot?: string;
+  is_mintable?: string;
+  is_proxy?: string;
+  buy_tax?: string;
+  sell_tax?: string;
+  holder_count?: string;
+  can_take_back_ownership?: string;
+  is_blacklisted?: string;
+  transfer_pausable?: string;
+  hidden_owner?: string;
+  selfdestruct?: string;
+  is_open_source?: string;
+  is_in_dex?: string;
+  [key: string]: any;
+}
+
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!);
 const scanner = new TokenScanner();
 const openaiService = new OpenAIService();
@@ -20,7 +41,7 @@ const rateLimiter = new RateLimiter();
 
 const PLAT_CONTRACT = '0xdA07d02eCdBF2Bf8214a1B4B7B740755dae4C3Be';
 
-async function formatScanResult(address: string, result: any, aiResponse?: string): Promise<string> {
+async function formatScanResult(address: string, result: TokenSecurityResult, aiResponse?: string): Promise<string> {
   const tokenName = result.token_name || 'Unknown Token';
   const tokenSymbol = result.token_symbol || 'N/A';
 
@@ -79,10 +100,10 @@ I'm *${character.name}*, and I feel the current. I spot the rugs.
 /about — Learn about $PLAT
 
 *Supported Chains:*
-• Base (default)
-• Ethereum (use chain ID: 1)
-• BSC (56)
-• Polygon (137)
+- Base (default)
+- Ethereum (use chain ID: 1)
+- BSC (56)
+- Polygon (137)
 
 Now beat it, and stay safe out there. 🐙`;
 
@@ -132,7 +153,7 @@ bot.command('audit', async (ctx) => {
   await ctx.reply('🔍 Scanning contract... gimme a second, pal.');
 
   try {
-    const result = await scanner.scanToken(contractAddress, chainId);
+    const result = await scanner.scanToken(contractAddress, chainId) as TokenSecurityResult;
 
     if (!result || result.error) {
       await ctx.reply('Contract not found or scan failed. Check the address, mug.');
@@ -143,8 +164,8 @@ bot.command('audit', async (ctx) => {
     try {
       aiResponse = await openaiService.generateResponse({
         contractAddress: contractAddress,
-        tokenName: result.token_name,
-        tokenSymbol: result.token_symbol,
+        tokenName: result.token_name || '',
+        tokenSymbol: result.token_symbol || '',
         isHoneypot: result.is_honeypot || '0',
         isMintable: result.is_mintable || '0',
         isProxy: result.is_proxy || '0',
