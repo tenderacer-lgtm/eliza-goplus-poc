@@ -55,7 +55,7 @@ async function formatScanResult(address: string, result: TokenSecurityResult, ai
   message += `━━━━━━━━━━━━━━━━━━\n\n`;
 
   if (aiResponse) {
-    message += `🕵️ *Detective's Take:*\n${aiResponse}\n\n`;
+    message += `🕵️ *RP's Take:*\n${aiResponse}\n\n`;
     message += `━━━━━━━━━━━━━━━━━━\n\n`;
   }
 
