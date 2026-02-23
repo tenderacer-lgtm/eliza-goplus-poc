@@ -28,7 +28,7 @@ class OpenAIService {
     });
     
     this.model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-    this.maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS || '100');
+    this.maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS || '180');
     this.temperature = parseFloat(process.env.OPENAI_TEMPERATURE || '0.9');
   }
 
@@ -49,20 +49,37 @@ class OpenAIService {
 
       const response = completion.choices[0]?.message?.content;
 
-// Clean response - remove non-English characters
-const cleaned = response
-  ?.replace(/[^\x00-\x7F\s]/g, '') // Remove non-ASCII
-  .replace(/\s+/g, ' ') // Fix spacing
-  .trim()
-  .substring(0, 150); // Hard limit
+      // Clean response - remove non-English characters
+      let cleaned = response
+        ?.replace(/[^\x00-\x7F\s]/g, '') // Remove non-ASCII
+        .replace(/\s+/g, ' ') // Fix spacing
+        .trim() || '';
 
-return cleaned || this.getFallbackResponse(contractData);
+      // Trim to last complete sentence if needed
+      if (cleaned.length > 200) {
+        cleaned = cleaned.substring(0, 200);
+      }
+      
+      // If ends mid-sentence, trim to last punctuation
+      if (cleaned && !cleaned.match(/[.!?]$/)) {
+        const lastPunc = Math.max(
+          cleaned.lastIndexOf('.'),
+          cleaned.lastIndexOf('!'),
+          cleaned.lastIndexOf('?')
+        );
+        if (lastPunc > 50) {
+          cleaned = cleaned.substring(0, lastPunc + 1);
+        }
+      }
+
+      return cleaned || this.getFallbackResponse(contractData);
 
     } catch (error) {
       console.error('OpenAI API error:', error);
       return this.getFallbackResponse(contractData);
     }
   }
+
   private getSystemPrompt(): string {
     return `You are Rug Pullatypus ($PLAT), a 1930s detective platypus who scans crypto on Base.
 
@@ -72,12 +89,13 @@ Rules:
 - Plain language anyone understands (no fancy vocabulary)
 - Mix 1930s slang (See?, Listen pal) with crypto terms
 - Mention actual risks if they exist
-- Keep under 150 characters and PUNCH HARD
+- Keep under 180 characters and PUNCH HARD
 - Never give financial advice
 - Be a platypus sometimes (mention bill, spurs, tail)
 
 Give a simple, punchy take based on the data.`;
   }
+
   private buildUserPrompt(data: ContractData): string {
     const risks = this.analyzeRisks(data);
     const riskLevel = this.getRiskLevel(risks);
@@ -93,7 +111,7 @@ ${risks.length > 0 ? risks.join('\n') : 'No major red flags'}
 
 Risk Level: ${riskLevel}
 
-Generate a short, punchy response in character (under 280 chars). ${riskLevel === 'EXTREME' ? 'Roast them hard.' : riskLevel === 'LOW' ? 'Give cautious approval.' : 'Be skeptical but fair.'}`;
+Generate a short, punchy response in character (under 200 chars). ${riskLevel === 'EXTREME' ? 'Roast them hard.' : riskLevel === 'LOW' ? 'Give cautious approval.' : 'Be skeptical but fair.'}`;
   }
 
   private analyzeRisks(data: ContractData): string[] {
