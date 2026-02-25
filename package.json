@@ -5,18 +5,26 @@
   "type": "module",
   "main": "dist/telegram-bot-v2.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/telegram-bot-v2.js"
+    "build": "npx tsc",
+    "start": "node dist/telegram-bot-v2.js",
+    "sniper": "node dist/bounty-sniper.js"
   },
-  "keywords": ["telegram", "bot", "token-scanner", "web3"],
+  "keywords": [
+    "telegram",
+    "bot",
+    "token-scanner",
+    "web3"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@neynar/nodejs-sdk": "^1.40.0",
     "dotenv": "^16.6.1",
+    "node-fetch": "^3.3.2",
     "openai": "^4.104.0",
     "telegraf": "^4.16.3",
-    "typescript": "^5.3.3",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@types/node": "^20.11.5"
