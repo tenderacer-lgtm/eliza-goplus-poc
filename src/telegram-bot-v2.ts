@@ -38,130 +38,58 @@ async function formatScanResult(address: string, result: any, aiResponse?: strin
     message += `━━━━━━━━━━━━━━━━━━\n\n`;
   }
 
-  // ✅ CRITICAL SECURITY CHECKS FIRST
-  message += `🚨 *CRITICAL SECURITY CHECKS:*\n`;
   
-  // Contract Renounced Check (MOST IMPORTANT)
+  // 📊 LIQUIDITY & ACTIVITY
+  message += `📊 *LIQUIDITY & ACTIVITY:*
+`;
+  message += `   DEX Listed: ${result.is_in_dex === '1' ? '✅ YES' : '❌ NO'}
+`;
+  
+  const lpSupply = parseFloat(result.lp_total_supply || '0');
+  if (lpSupply > 0) {
+    message += `   LP Supply: ${lpSupply.toExponential(2)}
+`;
+  } else {
+    message += `   LP Supply: 🔴 NONE (Cannot trade!)
+`;
+  }
+  
+  const totalSupply = parseFloat(result.total_supply || '0');
+  if (totalSupply > 0) {
+    message += `   Total Supply: ${totalSupply.toExponential(2)}
+`;
+  }
+  
+  message += `
+`;
+
+  // ✅ FINAL VERDICT - COMPREHENSIVE CHECKS
+  const holderCount = parseInt(result.holder_count || '0');
   const isRenounced = result.can_take_back_ownership === '0';
-  message += `   Contract Renounced: ${isRenounced ? '✅ YES (Good)' : '🔴 NO (DANGER!)'}\n`;
-  
-  // Liquidity Lock Check (SECOND MOST IMPORTANT)
   const lpHolderCount = parseInt(result.lp_holder_count || '0');
   const hasLockedLP = lpHolderCount > 0;
-  message += `   Liquidity Locked: ${hasLockedLP ? `✅ YES (${lpHolderCount} holders)` : '🔴 NO (DANGER!)'}\n`;
+  const isInDex = result.is_in_dex === '1';
+  const hasLiquidity = lpSupply > 0;
   
-  // Honeypot
-  message += `   Honeypot: ${result.is_honeypot === '1' ? '🔴 YES (DANGER!)' : '🟢 NO'}\n\n`;
-
-  // Other risk factors
-  message += `⚠️ *OTHER RISK FACTORS:*\n`;
-  message += `   Proxy Contract: ${result.is_proxy === '1' ? '🔴 YES' : '🟢 NO'}\n`;
-  message += `   Mintable: ${result.is_mintable === '1' ? '🔴 YES' : '🟢 NO'}\n`;
-  message += `   Self-Destruct: ${result.selfdestruct === '1' ? '🔴 YES' : '🟢 NO'}\n`;
-  message += `   Hidden Owner: ${result.hidden_owner === '1' ? '🔴 YES' : '🟢 NO'}\n\n`;
-
-  const buyTax = result.buy_tax ? (parseFloat(result.buy_tax) * 100).toFixed(2) : '0';
-  const sellTax = result.sell_tax ? (parseFloat(result.sell_tax) * 100).toFixed(2) : '0';
-
-  message += `💰 *TAX INFORMATION:*\n`;
-  message += `   Buy Tax: ${buyTax}%\n`;
-  message += `   Sell Tax: ${sellTax}%\n\n`;
-
-  message += `⚙️ *CONTRACT FEATURES:*\n`;
-  message += `   Open Source: ${result.is_open_source === '1' ? '✅ YES' : '❌ NO'}\n`;
-  message += `   Transfer Pausable: ${result.transfer_pausable === '1' ? '🔴 YES' : '🟢 NO'}\n`;
-  message += `   Blacklist Function: ${result.is_blacklisted === '1' ? '🔴 YES' : '🟢 NO'}\n\n`;
-
-  message += `📈 *MARKET DATA:*\n`;
-  message += `   Holder Count: ${result.holder_count || 'Unknown'}\n`;
-  message += `   Listed on DEX: ${result.is_in_dex === '1' ? '✅ YES' : '❌ NO'}\n\n`;
-
-  // ✅ FINAL VERDICT
-  const holderCount = parseInt(result.holder_count || '0');
   let verdict = '';
   
-  if (!isRenounced && !hasLockedLP) {
     verdict = '🚨 *EXTREME DANGER:* Not renounced + No locked LP = RUG PULL READY!';
-  } else if (!isRenounced) {
+    verdict = '🚨 *EXTREME DANGER:* Not listed on DEX + No liquidity = CANNOT TRADE!';
     verdict = '⚠️ *HIGH RISK:* Contract not renounced. Owner has full control!';
-  } else if (!hasLockedLP) {
     verdict = '⚠️ *HIGH RISK:* Liquidity not locked. Can be drained instantly!';
+    verdict = '⚠️ *HIGH RISK:* Not listed on any DEX. Cannot trade easily!';
+  } else if (holderCount < 10) {
   } else if (holderCount < 50) {
-    verdict = `⚠️ *CAUTION:* Only ${holderCount} holders. Very risky!`;
   } else if (holderCount < 200) {
     verdict = '⚡ *MODERATE RISK:* Low holder count. Proceed carefully.';
   } else {
-    verdict = '✅ *LOOKS SAFER:* Key checks passed. Still DYOR!';
+    verdict = '✅ *LOOKS SAFER:* Key checks passed. Still DYOR before investing!';
   }
   
-  message += `${verdict}\n\n`;
+  message += `${verdict}
 
-  message += `━━━━━━━━━━━━━━━━━━\n\n`;
-  message += `🛡️ *Protected by Rug Pullatypus ($PLAT)*\n`;
-  message += `Part of the Safety Suite for Base\n\n`;
-  message += `Learn more: Rugpullatypus.com`;
-
-  return message;
-}
-
-bot.command('start', async (ctx) => {
-  const welcomeMessage = `Listen here, friend. I am a fast-talking, cynical biological disaster who audits crypto scams.
-
-I'm *${character.name}*, and I feel the current. I spot the rugs.
-
-🔍 *Commands:*
-/audit <contract_address> — Scan a token for scams
-/about — Learn about $PLAT
-
-*Supported Chains:*
-• Base (default)
-• Ethereum (use chain ID: 1)
-• BSC (56)
-• Polygon (137)
-
-Now beat it, and stay safe out there. 🐙`;
-
-  await ctx.reply(welcomeMessage, { parse_mode: 'Markdown' });
-});
-
-bot.command('audit', async (ctx) => {
-  const args = ctx.message.text.split(' ');
-  
-  if (args.length < 2) {
-    await ctx.reply('Usage: /audit <contract_address> [chain_id]\nExample: /audit 0xYourContractAddress');
-    return;
-  }
-
-  const contractAddress = args[1].toLowerCase();
-  const chainId = args[2] || '8453';
-
-  if (!/^0x[a-fa-f0-9]{40}$/.test(contractAddress)) {
-    await ctx.reply("That doesn't look like a valid contract address, wise guy.");
-    return;
-  }
-
-  const userId = ctx.from?.id;
-  if (userId) {
-    const canProceed = await rateLimiter.checkLimit(userId);
-    if (!canProceed) {
-      const waitTime = rateLimiter.getRemainingTime(userId);
-      await ctx.reply(
-        `Slow down there, mug. My OpenAI credits ain't made of money. ` +
-        `Try again in ${waitTime} seconds, see?`
-      );
-      return;
-    }
-  }
-
-  if (contractAddress === PLAT_CONTRACT.toLowerCase()) {
-    const platMessage = `🐙 *Scanning $PLAT...*\n\n` +
-      `*kicks the tires*\n\n` +
-      `Listen, kid. This contract is like a stolen Ferrari. The engine is screaming, ` +
-      `the bodywork is gorgeous... okay, the tires are a little bald and the check engine light flickers.\n\n` +
-      `But we're changing the tires while doing 90mph on the highway.\n\n` +
-      `*Verdict:* BUCKLE UP. WE RIDE. 🏎️💨`;
-    await ctx.reply(platMessage, { parse_mode: 'Markdown' });
-    return;
+`;
+return;
   }
 
   await ctx.reply('🔍 Scanning contract... gimme a second, pal.');
