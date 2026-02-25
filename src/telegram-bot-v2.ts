@@ -39,28 +39,22 @@ async function formatScanResult(address: string, result: any, aiResponse?: strin
   }
 
   
-  // 📊 LIQUIDITY & ACTIVITY
-  message += `📊 *LIQUIDITY & ACTIVITY:*
-`;
-  message += `   DEX Listed: ${result.is_in_dex === '1' ? '✅ YES' : '❌ NO'}
-`;
+  message += `📊 *LIQUIDITY & ACTIVITY:*\n`;
+  message += `   DEX Listed: ${result.is_in_dex === '1' ? '✅ YES' : '❌ NO'}\n`;
   
   const lpSupply = parseFloat(result.lp_total_supply || '0');
   if (lpSupply > 0) {
-    message += `   LP Supply: ${lpSupply.toExponential(2)}
-`;
+    message += `   LP Supply: ${lpSupply.toExponential(2)}\n`;
   } else {
-    message += `   LP Supply: 🔴 NONE (Cannot trade!)
-`;
+    message += `   LP Supply: 🔴 NONE (Cannot trade!)\n`;
   }
   
   const totalSupply = parseFloat(result.total_supply || '0');
   if (totalSupply > 0) {
-    message += `   Total Supply: ${totalSupply.toExponential(2)}
-`;
+    message += `   Total Supply: ${totalSupply.toExponential(2)}\n`;
   }
   
-  message += `
+  message += `\n`;
 `;
 
   // ✅ FINAL VERDICT - COMPREHENSIVE CHECKS
@@ -69,24 +63,54 @@ async function formatScanResult(address: string, result: any, aiResponse?: strin
   const lpHolderCount = parseInt(result.lp_holder_count || '0');
   const hasLockedLP = lpHolderCount > 0;
   const isInDex = result.is_in_dex === '1';
+  const totalSupply = parseFloat(result.total_supply || '0');
+  const lpSupply = parseFloat(result.lp_total_supply || '0');
   const hasLiquidity = lpSupply > 0;
   
   let verdict = '';
   
+  // EXTREME DANGER: Multiple critical issues
+  if (!isRenounced && !hasLockedLP) {
     verdict = '🚨 *EXTREME DANGER:* Not renounced + No locked LP = RUG PULL READY!';
+  }
+  // EXTREME DANGER: No DEX listing or liquidity
+  else if (!isInDex && !hasLiquidity) {
     verdict = '🚨 *EXTREME DANGER:* Not listed on DEX + No liquidity = CANNOT TRADE!';
+  }
+  // EXTREME DANGER: Very low holders + no liquidity
+  else if (holderCount < 10 && !hasLiquidity) {
+    verdict = '🚨 *EXTREME DANGER:* Only ${holderCount} holders + No liquidity = DEAD/SCAM TOKEN!';
+  }
+  // HIGH RISK: Not renounced
+  else if (!isRenounced) {
     verdict = '⚠️ *HIGH RISK:* Contract not renounced. Owner has full control!';
+  }
+  // HIGH RISK: No locked liquidity
+  else if (!hasLockedLP) {
     verdict = '⚠️ *HIGH RISK:* Liquidity not locked. Can be drained instantly!';
+  }
+  // HIGH RISK: Not on DEX
+  else if (!isInDex) {
     verdict = '⚠️ *HIGH RISK:* Not listed on any DEX. Cannot trade easily!';
-  } else if (holderCount < 10) {
-  } else if (holderCount < 50) {
-  } else if (holderCount < 200) {
+  }
+  // HIGH RISK: Very low holders
+  else if (holderCount < 10) {
+    verdict = `⚠️ *HIGH RISK:* Only ${holderCount} holders. Dead or brand new token!`;
+  }
+  // CAUTION: Low holders
+  else if (holderCount < 50) {
+    verdict = `⚠️ *CAUTION:* Only ${holderCount} holders. Very risky!`;
+  }
+  // MODERATE: Some concerns
+  else if (holderCount < 200) {
     verdict = '⚡ *MODERATE RISK:* Low holder count. Proceed carefully.';
-  } else {
+  }
+  // SAFER: Passed major checks
+  else {
     verdict = '✅ *LOOKS SAFER:* Key checks passed. Still DYOR before investing!';
   }
   
-  message += `${verdict}
+  message += `${verdict}\n\n`;
 
 `;
 return;
