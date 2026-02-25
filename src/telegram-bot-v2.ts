@@ -13,27 +13,6 @@ const __dirname = path.dirname(__filename);
 const characterPath = path.join(__dirname, '../RugPullatypus.json');
 const character = JSON.parse(fs.readFileSync(characterPath, 'utf-8'));
 
-// Add interface with optional properties
-interface TokenSecurityResult {
-  error?: any;
-  token_name?: string;
-  token_symbol?: string;
-  is_honeypot?: string;
-  is_mintable?: string;
-  is_proxy?: string;
-  buy_tax?: string;
-  sell_tax?: string;
-  holder_count?: string;
-  can_take_back_ownership?: string;
-  is_blacklisted?: string;
-  transfer_pausable?: string;
-  hidden_owner?: string;
-  selfdestruct?: string;
-  is_open_source?: string;
-  is_in_dex?: string;
-  [key: string]: any;
-}
-
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!);
 const scanner = new TokenScanner();
 const openaiService = new OpenAIService();
@@ -41,7 +20,7 @@ const rateLimiter = new RateLimiter();
 
 const PLAT_CONTRACT = '0xdA07d02eCdBF2Bf8214a1B4B7B740755dae4C3Be';
 
-async function formatScanResult(address: string, result: TokenSecurityResult, aiResponse?: string): Promise<string> {
+async function formatScanResult(address: string, result: any, aiResponse?: string): Promise<string> {
   const tokenName = result.token_name || 'Unknown Token';
   const tokenSymbol = result.token_symbol || 'N/A';
 
@@ -59,8 +38,23 @@ async function formatScanResult(address: string, result: TokenSecurityResult, ai
     message += `━━━━━━━━━━━━━━━━━━\n\n`;
   }
 
-  message += `🚨 *CRITICAL RISK FACTORS:*\n`;
-  message += `   Honeypot: ${result.is_honeypot === '1' ? '🔴 YES (DANGER!)' : '🟢 NO'}\n`;
+  // ✅ CRITICAL SECURITY CHECKS FIRST
+  message += `🚨 *CRITICAL SECURITY CHECKS:*\n`;
+  
+  // Contract Renounced Check (MOST IMPORTANT)
+  const isRenounced = result.can_take_back_ownership === '0';
+  message += `   Contract Renounced: ${isRenounced ? '✅ YES (Good)' : '🔴 NO (DANGER!)'}\n`;
+  
+  // Liquidity Lock Check (SECOND MOST IMPORTANT)
+  const lpHolderCount = parseInt(result.lp_holder_count || '0');
+  const hasLockedLP = lpHolderCount > 0;
+  message += `   Liquidity Locked: ${hasLockedLP ? `✅ YES (${lpHolderCount} holders)` : '🔴 NO (DANGER!)'}\n`;
+  
+  // Honeypot
+  message += `   Honeypot: ${result.is_honeypot === '1' ? '🔴 YES (DANGER!)' : '🟢 NO'}\n\n`;
+
+  // Other risk factors
+  message += `⚠️ *OTHER RISK FACTORS:*\n`;
   message += `   Proxy Contract: ${result.is_proxy === '1' ? '🔴 YES' : '🟢 NO'}\n`;
   message += `   Mintable: ${result.is_mintable === '1' ? '🔴 YES' : '🟢 NO'}\n`;
   message += `   Self-Destruct: ${result.selfdestruct === '1' ? '🔴 YES' : '🟢 NO'}\n`;
@@ -82,6 +76,26 @@ async function formatScanResult(address: string, result: TokenSecurityResult, ai
   message += `   Holder Count: ${result.holder_count || 'Unknown'}\n`;
   message += `   Listed on DEX: ${result.is_in_dex === '1' ? '✅ YES' : '❌ NO'}\n\n`;
 
+  // ✅ FINAL VERDICT
+  const holderCount = parseInt(result.holder_count || '0');
+  let verdict = '';
+  
+  if (!isRenounced && !hasLockedLP) {
+    verdict = '🚨 *EXTREME DANGER:* Not renounced + No locked LP = RUG PULL READY!';
+  } else if (!isRenounced) {
+    verdict = '⚠️ *HIGH RISK:* Contract not renounced. Owner has full control!';
+  } else if (!hasLockedLP) {
+    verdict = '⚠️ *HIGH RISK:* Liquidity not locked. Can be drained instantly!';
+  } else if (holderCount < 50) {
+    verdict = `⚠️ *CAUTION:* Only ${holderCount} holders. Very risky!`;
+  } else if (holderCount < 200) {
+    verdict = '⚡ *MODERATE RISK:* Low holder count. Proceed carefully.';
+  } else {
+    verdict = '✅ *LOOKS SAFER:* Key checks passed. Still DYOR!';
+  }
+  
+  message += `${verdict}\n\n`;
+
   message += `━━━━━━━━━━━━━━━━━━\n\n`;
   message += `🛡️ *Protected by Rug Pullatypus ($PLAT)*\n`;
   message += `Part of the Safety Suite for Base\n\n`;
@@ -100,10 +114,10 @@ I'm *${character.name}*, and I feel the current. I spot the rugs.
 /about — Learn about $PLAT
 
 *Supported Chains:*
-- Base (default)
-- Ethereum (use chain ID: 1)
-- BSC (56)
-- Polygon (137)
+• Base (default)
+• Ethereum (use chain ID: 1)
+• BSC (56)
+• Polygon (137)
 
 Now beat it, and stay safe out there. 🐙`;
 
@@ -153,7 +167,7 @@ bot.command('audit', async (ctx) => {
   await ctx.reply('🔍 Scanning contract... gimme a second, pal.');
 
   try {
-    const result = await scanner.scanToken(contractAddress, chainId) as TokenSecurityResult;
+    const result = await scanner.scanToken(contractAddress, chainId);
 
     if (!result || result.error) {
       await ctx.reply('Contract not found or scan failed. Check the address, mug.');
@@ -172,10 +186,11 @@ bot.command('audit', async (ctx) => {
         buyTax: result.buy_tax || '0',
         sellTax: result.sell_tax || '0',
         holderCount: result.holder_count || '0',
-        canTakeBackOwnership: result.can_take_back_ownership || '0',
+        canTakeBackOwnership: result.can_take_back_ownership || '1',
         isBlacklisted: result.is_blacklisted || '0',
         transferPausable: result.transfer_pausable || '0',
-        hiddenOwner: result.hidden_owner || '0'
+        hiddenOwner: result.hidden_owner || '0',
+        lpHolderCount: result.lp_holder_count || '0'
       });
     } catch (error) {
       console.error('OpenAI failed, using static response');
