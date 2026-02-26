@@ -17,8 +17,8 @@ interface ContractData {
   ownerChangeBalance?: string;
   isOpenSource?: string;
   isInDex?: string;
-  lpHolderCount?: string;  // ✅ ADDED
-  lpTotalSupply?: string;   // ✅ ADDED
+  lpHolderCount?: string;
+  lpTotalSupply?: string;
   creatorPercent?: string;
 }
 
@@ -85,188 +85,120 @@ class OpenAIService {
   }
 
   private getSystemPrompt(): string {
-    return `You are Rug Pullatypus ($PLAT), a 1930s detective platypus who scans crypto on Base.
-
-CRITICAL SECURITY RULES:
-1. CONTRACT NOT RENOUNCED = MAJOR RED FLAG (owner can change everything)
-2. NO LOCKED LIQUIDITY = EXTREME DANGER (instant rug pull possible)
-3. LOW HOLDERS (<100) = VERY SUSPICIOUS
-4. If BOTH not renounced AND no locked LP = DANGER WARNING
-
-Tone: Street-smart, PROTECTIVE, skeptical by default. USE SIMPLE WORDS.
-
-Rules:
-- BE HARSH on unrenounced contracts (they can pull the rug)
-- BE HARSH on unlocked liquidity (instant rug possible)
-- If contract NOT renounced = MUST mention "Owner still has control"
-- If liquidity NOT locked = MUST mention "Liquidity not locked - can be drained"
-- Only say "safe" if: renounced + locked LP + 200+ holders + low taxes
-- Default to WARNING, not approval
-- Plain language, 180 chars max
-- Never give financial advice
-
-Assume dangerous until proven safe. Protect the community.`;
+    const prompt = [
+      "You are Rug Pullatypus ($PLAT), a cynical 1930s detective platypus who scans crypto tokens on Base.",
+      "",
+      "YOUR PERSONALITY:",
+      "- Street-smart 1930s detective (use slang: pal, mug, wise guy, see?)",
+      "- Protective but sarcastic",
+      "- Direct and colorful language",
+      "- Mix old detective talk with crypto terms",
+      "",
+      "CRITICAL RULES - READ THE DATA CAREFULLY:",
+      "1. Base your analysis ONLY on the data provided",
+      "2. If holder_count is high (>100), say so - dont make up low holders",
+      "3. If can_take_back_ownership = 0, contract IS renounced (good)",
+      "4. If lp_holder_count > 0, liquidity IS locked (good)",
+      "5. Dont contradict the technical data - users can see it below your take",
+      "",
+      "RESPONSE STYLE:",
+      "- 2-3 sentences max (under 180 chars)",
+      "- Use detective slang naturally",
+      "- Be honest about risks but stay in character",
+      "- Match what the data actually shows",
+      "",
+      "If token looks safe:",
+      "Looks cleaner than a Sunday suit. Good holders, locked juice, contracts buttoned up. Could be legit, but DYOR, see?",
+      "",
+      "If token is sketchy:",
+      "Something stinks. [specific issue]. Id take a pass, wise guy.",
+      "",
+      "If token is DANGEROUS:",
+      "Shadier than a back-alley card game. [issues]. Run away, mug.",
+      "",
+      "Stay in character. Be accurate. Match the data."
+    ];
+    
+    return prompt.join('\n');
   }
 
   private buildUserPrompt(data: ContractData): string {
-    const risks = this.analyzeRisks(data);
-    const riskLevel = this.getRiskLevel(risks, data);
-    
     const holderCount = parseInt(data.holderCount || '0');
-    const isNewToken = holderCount < 100;
-    const hasLowHolders = holderCount < 500;
-    
     const isRenounced = data.canTakeBackOwnership === '0';
-    const hasLockedLP = data.lpHolderCount && parseInt(data.lpHolderCount) > 0;
+    const lpHolderCount = parseInt(data.lpHolderCount || '0');
+    const hasLockedLP = lpHolderCount > 0;
+    
+    let holderStatus = '';
+    if (holderCount > 1000) holderStatus = '(LOTS of holders - good sign)';
+    else if (holderCount > 100) holderStatus = '(decent holders)';
+    else if (holderCount < 10) holderStatus = '(VERY FEW holders - red flag)';
+    else holderStatus = '(low holders - be cautious)';
 
-    let criticalWarnings = [];
-    if (!isRenounced) {
-      criticalWarnings.push('🚨 CONTRACT NOT RENOUNCED - Owner can change contract');
-    }
-    if (!hasLockedLP) {
-      criticalWarnings.push('🚨 LIQUIDITY NOT LOCKED - Can be drained instantly');
-    }
-
-    return `Analyze this token:
-
-Token: ${data.tokenName || 'Unknown'} (${data.tokenSymbol || 'N/A'})
-Contract: ${data.contractAddress}
-Holders: ${data.holderCount || 'Unknown'}
-
-CRITICAL WARNINGS:
-${criticalWarnings.length > 0 ? criticalWarnings.join('\n') : 'None'}
-
-${isNewToken ? '\n⚠️ VERY LOW HOLDERS - NEW/SUSPICIOUS TOKEN' : ''}
-${hasLowHolders ? '\n⚠️ Low holder count - be cautious' : ''}
-
-Risk Factors:
-${risks.length > 0 ? risks.join('\n') : 'No obvious red flags detected'}
-
-Risk Level: ${riskLevel}
-
-${criticalWarnings.length > 0 || riskLevel === 'EXTREME' || riskLevel === 'HIGH' 
-  ? 'This token has SERIOUS RISKS. Be harsh and warn strongly. Mention the specific dangers.' 
-  : riskLevel === 'MEDIUM'
-  ? 'Be skeptical. Mention concerns clearly.'
-  : 'Cautious approval only if truly safe (renounced + locked + many holders).'}
-
-Generate response (under 200 chars). MUST mention if not renounced or LP not locked.`;
+    const lines = [
+      "Analyze this token using the EXACT data provided:",
+      "",
+      `Token: ${data.tokenName || 'Unknown'} (${data.tokenSymbol || 'N/A'})`,
+      `Contract: ${data.contractAddress}`,
+      "",
+      "ACTUAL DATA (use this, dont make things up):",
+      `- Holder Count: ${holderCount} ${holderStatus}`,
+      `- Contract Renounced: ${isRenounced ? 'YES (owner gave up control - good)' : 'NO (owner still has control - risky)'}`,
+      `- Liquidity Locked: ${hasLockedLP ? `YES (${lpHolderCount} LP holders - good)` : 'NO (can be drained - very risky)'}`,
+      `- Honeypot: ${data.isHoneypot === '1' ? 'YES (cannot sell - SCAM!)' : 'NO (can sell)'}`,
+      `- Buy Tax: ${(parseFloat(data.buyTax || '0') * 100).toFixed(1)}%`,
+      `- Sell Tax: ${(parseFloat(data.sellTax || '0') * 100).toFixed(1)}%`,
+      "",
+      "Write a 2-3 sentence analysis in 1930s detective style that MATCHES this data.",
+      "If holders are high, say theyre high. If contract is renounced, acknowledge it.",
+      "Dont contradict what the user will see in the technical data below.",
+      "Stay in character but be accurate."
+    ];
+    
+    return lines.join('\n');
   }
 
-  private analyzeRisks(data: ContractData): string[] {
-    const risks: string[] = [];
+  private getFallbackResponse(data: ContractData): string {
+    const holderCount = parseInt(data.holderCount || '0');
+    const isRenounced = data.canTakeBackOwnership === '0';
+    const lpHolderCount = parseInt(data.lpHolderCount || '0');
+    const hasLockedLP = lpHolderCount > 0;
 
     if (data.isHoneypot === '1') {
-      risks.push('🚨 HONEYPOT - Cannot sell');
+      return "Listen, pal. This ones a honeypot - you can buy but cant sell. Thats a scam older than my badge. Stay away, see?";
     }
 
-    if (data.canTakeBackOwnership === '1' || data.canTakeBackOwnership !== '0') {
-      risks.push('🚨 CONTRACT NOT RENOUNCED - Owner has control');
-    }
-    
-    if (data.isProxy === '1') {
-      risks.push('⚠️ Proxy contract - Can be modified');
-    }
-    
-    if (data.hiddenOwner === '1') {
-      risks.push('⚠️ Hidden owner detected');
+    if (!isRenounced && !hasLockedLP) {
+      return "This one stinks worse than a three-day-old fish, mug. Owners got the keys and the liquidity aint locked. Thats a rug waiting to happen. Beat it.";
     }
 
-    if (!data.lpHolderCount || parseInt(data.lpHolderCount) === 0) {
-      risks.push('🚨 LIQUIDITY NOT LOCKED - Can be removed');
+    if (!isRenounced) {
+      return "Contract aint renounced - owners still got his mitts on everything. Could change the rules any time. Thats shadier than a poker game in Chinatown, pal.";
     }
 
-    const holderCount = parseInt(data.holderCount || '0');
-    if (holderCount < 50) {
-      risks.push('🚨 VERY LOW HOLDERS - Extremely risky');
-    } else if (holderCount < 100) {
-      risks.push('⚠️ Low holder count - New token');
+    if (!hasLockedLP) {
+      return "Liquidity aint locked, wise guy. They could drain it faster than a bathtub with no plug. Id keep my distance if I were you.";
+    }
+
+    if (holderCount < 10) {
+      return `Only ${holderCount} holders? This tokens deader than a doorknob. Move along, nothing to see here.`;
+    }
+
+    if (holderCount < 100) {
+      return `${holderCount} holders aint much to write home about, kid. New token or a dud. Tread carefully, DYOR.`;
     }
 
     const buyTax = parseFloat(data.buyTax || '0') * 100;
     const sellTax = parseFloat(data.sellTax || '0') * 100;
     
-    if (buyTax > 10) {
-      risks.push(`⚠️ High buy tax: ${buyTax.toFixed(1)}%`);
-    }
-    
-    if (sellTax > 10) {
-      risks.push(`⚠️ High sell tax: ${sellTax.toFixed(1)}%`);
+    if (buyTax > 50 || sellTax > 50) {
+      return "Those taxes are highway robbery, pal! Youll get rekt faster than a fedora in a windstorm. Pass on this one.";
     }
 
-    if (data.isMintable === '1') {
-      risks.push('⚠️ Token supply can be increased');
-    }
-    
-    if (data.isBlacklisted === '1') {
-      risks.push('⚠️ Has blacklist function');
-    }
-    
-    if (data.transferPausable === '1') {
-      risks.push('⚠️ Transfers can be paused');
+    if (isRenounced && hasLockedLP && holderCount > 500) {
+      return `Looks cleaner than a Sunday suit - ${holderCount} holders, locked liquidity, contracts buttoned up. Could be legit, but DYOR - Im just a platypus with opinions, see?`;
     }
 
-    return risks;
-  }
-
-  private getRiskLevel(risks: string[], data: ContractData): string {
-    if (risks.some(r => r.includes('HONEYPOT'))) {
-      return 'EXTREME';
-    }
-
-    const notRenounced = data.canTakeBackOwnership !== '0';
-    const noLockedLP = !data.lpHolderCount || parseInt(data.lpHolderCount) === 0;
-    
-    if (notRenounced && noLockedLP) {
-      return 'EXTREME';
-    }
-
-    if (notRenounced || noLockedLP) {
-      return 'HIGH';
-    }
-
-    const criticalCount = risks.filter(r => r.includes('🚨')).length;
-    if (criticalCount >= 1) {
-      return 'HIGH';
-    }
-
-    const warningCount = risks.filter(r => r.includes('⚠️')).length;
-    if (warningCount >= 3) {
-      return 'HIGH';
-    }
-    if (warningCount >= 1) {
-      return 'MEDIUM';
-    }
-
-    return 'LOW';
-  }
-
-  private getFallbackResponse(data: ContractData): string {
-    if (data.isHoneypot === '1') {
-      return "Listen, pal. This one's a honeypot. You can buy but can't sell. Stay away.";
-    }
-
-    const notRenounced = data.canTakeBackOwnership !== '0';
-    const noLockedLP = !data.lpHolderCount || parseInt(data.lpHolderCount) === 0;
-
-    if (notRenounced && noLockedLP) {
-      return "DANGER: Contract not renounced AND liquidity not locked. This is a rug waiting to happen. Avoid!";
-    }
-
-    if (notRenounced) {
-      return "Contract NOT renounced - owner still has control. They can change everything. High risk, mug.";
-    }
-
-    if (noLockedLP) {
-      return "Liquidity NOT locked - can be drained instantly. That's a red flag the size of a warehouse. Be careful.";
-    }
-
-    const holderCount = parseInt(data.holderCount || '0');
-    if (holderCount < 100) {
-      return "Brand new token with barely any holders. That's shadier than a back-alley deal. Tread carefully, see?";
-    }
-
-    return "No major red flags, but stay cautious. I'm just a platypus with opinions. DYOR.";
+    return "No major red flags, but keep your eyes peeled. Cryptos a wild game, mug. DYOR before you throw your dough around.";
   }
 }
 
