@@ -24,6 +24,7 @@ export interface TokenSecurityResult {
   creator_address?: string;
   creator_balance?: string;
   creator_percent?: string;
+  owner_address?: string;  // ✅ ADD THIS LINE
   error?: string;
   message?: string;
 }

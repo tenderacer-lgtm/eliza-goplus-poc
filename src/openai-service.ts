@@ -20,6 +20,7 @@ interface ContractData {
   lpHolderCount?: string;
   lpTotalSupply?: string;
   creatorPercent?: string;
+  ownerAddress?: string;  // ✅ ADD THIS LINE
 }
 
 class OpenAIService {
@@ -124,7 +125,8 @@ class OpenAIService {
 
   private buildUserPrompt(data: ContractData): string {
     const holderCount = parseInt(data.holderCount || '0');
-    const isRenounced = data.canTakeBackOwnership === '0';
+    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const isRenounced = data.ownerAddress?.toLowerCase() === ZERO_ADDRESS.toLowerCase();
     const lpHolderCount = parseInt(data.lpHolderCount || '0');
     const hasLockedLP = lpHolderCount > 0;
     

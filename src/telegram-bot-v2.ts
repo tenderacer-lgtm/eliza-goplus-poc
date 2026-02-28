@@ -53,7 +53,9 @@ async function formatScanResult(address: string, result: any, aiResponse?: strin
   // CRITICAL SECURITY CHECKS
   message += `🚨 *CRITICAL SECURITY CHECKS:*\n`;
   
-  const isRenounced = result.can_take_back_ownership === '0';
+  // Check if owner address is zero address (renounced)
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+const isRenounced = result.owner_address?.toLowerCase() === ZERO_ADDRESS.toLowerCase();
   message += `   Contract Renounced: ${isRenounced ? '✅ YES (Good)' : '🔴 NO (DANGER!)'}\n`;
   
   const lpHolderCount = parseInt(result.lp_holder_count || '0');
@@ -221,21 +223,22 @@ bot.command('audit', async (ctx) => {
     let aiResponse: string | undefined;
     try {
       aiResponse = await openaiService.generateResponse({
-        contractAddress: contractAddress,
-        tokenName: result.token_name || '',
-        tokenSymbol: result.token_symbol || '',
-        isHoneypot: result.is_honeypot || '0',
-        isMintable: result.is_mintable || '0',
-        isProxy: result.is_proxy || '0',
-        buyTax: result.buy_tax || '0',
-        sellTax: result.sell_tax || '0',
-        holderCount: result.holder_count || '0',
-        canTakeBackOwnership: result.can_take_back_ownership || '1',
-        isBlacklisted: result.is_blacklisted || '0',
-        transferPausable: result.transfer_pausable || '0',
-        hiddenOwner: result.hidden_owner || '0',
-        lpHolderCount: result.lp_holder_count || '0'
-      });
+  contractAddress: contractAddress,
+  tokenName: result.token_name || '',
+  tokenSymbol: result.token_symbol || '',
+  isHoneypot: result.is_honeypot || '0',
+  isMintable: result.is_mintable || '0',
+  isProxy: result.is_proxy || '0',
+  buyTax: result.buy_tax || '0',
+  sellTax: result.sell_tax || '0',
+  holderCount: result.holder_count || '0',
+  canTakeBackOwnership: result.can_take_back_ownership || '1',
+  isBlacklisted: result.is_blacklisted || '0',
+  transferPausable: result.transfer_pausable || '0',
+  hiddenOwner: result.hidden_owner || '0',
+  lpHolderCount: result.lp_holder_count || '0',
+  ownerAddress: result.owner_address || ''  // ✅ ADD THIS LINE
+});
     } catch (error) {
       console.error('OpenAI failed, using static response');
     }
