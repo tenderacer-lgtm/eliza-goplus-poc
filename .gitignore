@@ -1,14 +1,20 @@
+# Dependencies
 node_modules/
-.env
-*.log
-dist/
-.DS_Store
-*.db
-*.sqlite
-.env
-*.env
+
+# Environment variables
 .env
 .env.local
 .env.*.local
-.env
-.env.*
+
+# Build output
+dist/
+
+# Logs
+*.log
+
+# Database files
+*.db
+*.sqlite
+
+# OS files
+.DS_Store
