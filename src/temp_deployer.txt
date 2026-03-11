@@ -1,0 +1,13 @@
+    // Get deployer history from Etherscan
+    const creatorAddress = result.creator_address;
+    let deployerInfo = null;
+    let fundingSource = null;
+    
+    if (creatorAddress && creatorAddress !== '0x0000000000000000000000000000000000000000') {
+      try {
+        deployerInfo = await etherscanService.getDeployerHistory(creatorAddress);
+        fundingSource = await etherscanService.checkFundingSource(contractAddress);
+      } catch (error) {
+        console.error('Etherscan enrichment failed:', error);
+      }
+    }

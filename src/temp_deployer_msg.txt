@@ -1,0 +1,27 @@
+  // DEPLOYER ANALYSIS
+  if (deployerInfo && deployerInfo.totalDeployments > 0) {
+    message += `\n🚩 *DEPLOYER HISTORY:*\n`;
+    message += `   Total Launches: ${deployerInfo.totalDeployments}\n`;
+    
+    if (deployerInfo.suspiciousPattern) {
+      message += `   ⚠️ *SERIAL DEPLOYER DETECTED!*\n`;
+      message += `   This address has launched ${deployerInfo.totalDeployments} contracts!\n`;
+    } else if (deployerInfo.totalDeployments > 10) {
+      message += `   ⚠️ Multiple launches - proceed with caution\n`;
+    } else if (deployerInfo.totalDeployments > 1) {
+      message += `   Previous launches: ${deployerInfo.totalDeployments}\n`;
+    }
+    
+    message += `   Deployer: \`${creatorAddress.substring(0, 10)}...${creatorAddress.substring(34)}\`\n\n`;
+  }
+  
+  // FUNDING SOURCE
+  if (fundingSource) {
+    message += `💰 *FUNDING SOURCE:*\n`;
+    if (fundingSource === 'Disperse.app') {
+      message += `   ⚠️ Funded via Disperse.app\n`;
+      message += `   (Common pattern for serial scammers)\n\n`;
+    } else {
+      message += `   Source: \`${fundingSource.substring(0, 10)}...${fundingSource.substring(34)}\`\n\n`;
+    }
+  }
